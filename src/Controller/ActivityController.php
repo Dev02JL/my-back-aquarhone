@@ -17,7 +17,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final class ActivityController extends AbstractController
 {
     #[Route('', name: 'app_activities_list', methods: ['GET'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_USER')]
     public function index(EntityManagerInterface $entityManager): JsonResponse
     {
         $activities = $entityManager->getRepository(Activity::class)->findAll();
@@ -42,7 +42,7 @@ final class ActivityController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_activities_show', methods: ['GET'])]
-    #[IsGranted('ROLE_ADMIN')]
+    #[IsGranted('ROLE_USER')]
     public function show(Activity $activity): JsonResponse
     {
         return $this->json([

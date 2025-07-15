@@ -102,15 +102,15 @@ curl -X GET http://localhost:8000/api/activities \
 | PUT | `/api/users/{id}` | Modifier un utilisateur |
 | DELETE | `/api/users/{id}` | Supprimer un utilisateur |
 
-### Gestion des activités (Admin uniquement)
+### Gestion des activités
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/activities` | Liste des activités |
-| GET | `/api/activities/{id}` | Détails d'une activité |
-| POST | `/api/activities` | Créer une activité |
-| PUT | `/api/activities/{id}` | Modifier une activité |
-| DELETE | `/api/activities/{id}` | Supprimer une activité |
+| Méthode | Endpoint | Description | Accès |
+|---------|----------|-------------|-------|
+| GET | `/api/activities` | Liste des activités | Utilisateurs authentifiés |
+| GET | `/api/activities/{id}` | Détails d'une activité | Utilisateurs authentifiés |
+| POST | `/api/activities` | Créer une activité | Admin uniquement |
+| PUT | `/api/activities/{id}` | Modifier une activité | Admin uniquement |
+| DELETE | `/api/activities/{id}` | Supprimer une activité | Admin uniquement |
 
 ## Exemples d'utilisation
 
@@ -126,6 +126,18 @@ curl -X POST http://localhost:8000/api/auth/register \
 curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@aquarhone.com","password":"admin123"}'
+```
+
+### Consulter les activités (Utilisateur ou Admin)
+```bash
+curl -X GET http://localhost:8000/api/activities \
+  -H "Authorization: Bearer <votre_token_jwt>"
+```
+
+### Consulter une activité spécifique (Utilisateur ou Admin)
+```bash
+curl -X GET http://localhost:8000/api/activities/1 \
+  -H "Authorization: Bearer <votre_token_jwt>"
 ```
 
 ### Créer un utilisateur (Admin)
@@ -165,7 +177,7 @@ curl -X PUT http://localhost:8000/api/activities/1 \
 
 ## Rôles
 
-- `ROLE_USER` : Utilisateur standard
+- `ROLE_USER` : Utilisateur standard (peut consulter les activités)
 - `ROLE_ADMIN` : Administrateur (accès complet à l'API)
 
 ## Structure du projet
