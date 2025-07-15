@@ -12,7 +12,7 @@ Backend Symfony avec gestion des utilisateurs et des rôles (USER et ADMIN).
 
 1. **Cloner le projet**
    ```bash
-   git clone <url-du-repo>
+   git clone git@github.com:Dev02JL/my-back-aquarhone.git
    cd back-aquarhone
    ```
 

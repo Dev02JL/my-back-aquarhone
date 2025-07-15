@@ -4,12 +4,14 @@ namespace App\Controller;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -69,8 +71,12 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/login', name: 'app_auth_login', methods: ['POST'])]
-    public function login(Request $request, AuthenticationUtils $authenticationUtils): JsonResponse
-    {
+    public function login(
+        Request $request,
+        JWTTokenManagerInterface $jwtManager,
+        UserPasswordHasherInterface $passwordHasher,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
         $data = json_decode($request->getContent(), true);
         
         if (!$data || !isset($data['email']) || !isset($data['password'])) {
@@ -79,8 +85,24 @@ final class AuthController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
 
+        $user = $entityManager->getRepository(User::class)->findOneBy(['email' => $data['email']]);
+        
+        if (!$user || !$passwordHasher->isPasswordValid($user, $data['password'])) {
+            return $this->json([
+                'error' => 'Identifiants invalides'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $token = $jwtManager->create($user);
+
         return $this->json([
-            'message' => 'Endpoint de connexion - à implémenter avec JWT ou session'
+            'message' => 'Connexion réussie',
+            'token' => $token,
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles()
+            ]
         ]);
     }
 
