@@ -1,6 +1,6 @@
 # Back-Aquarhone - API Symfony
 
-Backend Symfony avec gestion des utilisateurs et des rôles (USER et ADMIN) et authentification JWT.
+Backend Symfony avec gestion des utilisateurs et des rôles (USER et ADMIN), authentification JWT et système de réservation d'activités.
 
 ## Prérequis
 
@@ -112,6 +112,15 @@ curl -X GET http://localhost:8000/api/activities \
 | PUT | `/api/activities/{id}` | Modifier une activité | Admin uniquement |
 | DELETE | `/api/activities/{id}` | Supprimer une activité | Admin uniquement |
 
+### Gestion des réservations (Utilisateurs authentifiés)
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/api/reservations` | Liste des réservations de l'utilisateur |
+| GET | `/api/reservations/{id}` | Détails d'une réservation |
+| POST | `/api/reservations` | Créer une réservation |
+| PUT | `/api/reservations/{id}/cancel` | Annuler une réservation |
+
 ## Exemples d'utilisation
 
 ### Inscription
@@ -137,6 +146,29 @@ curl -X GET http://localhost:8000/api/activities \
 ### Consulter une activité spécifique (Utilisateur ou Admin)
 ```bash
 curl -X GET http://localhost:8000/api/activities/1 \
+  -H "Authorization: Bearer <votre_token_jwt>"
+```
+
+### Créer une réservation (Utilisateur)
+```bash
+curl -X POST http://localhost:8000/api/reservations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <votre_token_jwt>" \
+  -d '{
+    "activityId": 1,
+    "dateTime": "2024-07-20 09:00:00"
+  }'
+```
+
+### Consulter ses réservations (Utilisateur)
+```bash
+curl -X GET http://localhost:8000/api/reservations \
+  -H "Authorization: Bearer <votre_token_jwt>"
+```
+
+### Annuler une réservation (Utilisateur)
+```bash
+curl -X PUT http://localhost:8000/api/reservations/1/cancel \
   -H "Authorization: Bearer <votre_token_jwt>"
 ```
 
@@ -177,7 +209,7 @@ curl -X PUT http://localhost:8000/api/activities/1 \
 
 ## Rôles
 
-- `ROLE_USER` : Utilisateur standard (peut consulter les activités)
+- `ROLE_USER` : Utilisateur standard (peut consulter les activités et gérer ses réservations)
 - `ROLE_ADMIN` : Administrateur (accès complet à l'API)
 
 ## Structure du projet
@@ -188,13 +220,16 @@ back-aquarhone/
 │   ├── Controller/
 │   │   ├── AuthController.php    # API d'authentification JWT
 │   │   ├── UserController.php    # API de gestion des utilisateurs
-│   │   └── ActivityController.php # API de gestion des activités
+│   │   ├── ActivityController.php # API de gestion des activités
+│   │   └── ReservationController.php # API de gestion des réservations
 │   ├── Entity/
 │   │   ├── User.php             # Entité utilisateur
-│   │   └── Activity.php         # Entité activité
+│   │   ├── Activity.php         # Entité activité
+│   │   └── Reservation.php      # Entité réservation
 │   ├── Repository/
 │   │   ├── UserRepository.php   # Repository utilisateur
-│   │   └── ActivityRepository.php # Repository activité
+│   │   ├── ActivityRepository.php # Repository activité
+│   │   └── ReservationRepository.php # Repository réservation
 │   └── Command/
 │       └── CreateAdminCommand.php # Commande pour créer un admin
 ├── config/
@@ -214,8 +249,11 @@ back-aquarhone/
 - **Tables** : 
   - `user` (id, email, roles, password)
   - `activity` (id, name, description, activity_type, location, available_slots, price, remaining_spots, created_at, updated_at)
+  - `reservation` (id, user_id, activity_id, date_time, status, created_at, updated_at)
 
-## Entité Activity
+## Entités
+
+### Entité Activity
 
 L'entité Activity contient les champs suivants :
 
@@ -228,6 +266,34 @@ L'entité Activity contient les champs suivants :
 - **remainingSpots** : Nombre de places restantes
 - **createdAt** : Date de création
 - **updatedAt** : Date de mise à jour
+
+### Entité Reservation
+
+L'entité Reservation contient les champs suivants :
+
+- **user** : Utilisateur qui a fait la réservation (relation ManyToOne)
+- **activity** : Activité réservée (relation ManyToOne)
+- **dateTime** : Date et heure de la réservation
+- **status** : Statut de la réservation (pending, confirmed, cancelled)
+- **createdAt** : Date de création
+- **updatedAt** : Date de mise à jour
+
+## Fonctionnalités de réservation
+
+### Création de réservation
+- Vérification de la disponibilité des places
+- Vérification que le créneau est dans les créneaux disponibles
+- Vérification qu'il n'y a pas de doublon de réservation
+- Décrémentation automatique du nombre de places restantes
+
+### Annulation de réservation
+- Vérification que l'utilisateur peut annuler sa propre réservation
+- Vérification que la réservation n'est pas dans le passé
+- Incrémentation automatique du nombre de places restantes
+
+### Historique des réservations
+- Accès à toutes les réservations de l'utilisateur connecté
+- Détails complets de chaque réservation avec les informations de l'activité
 
 ## Commandes utiles
 
@@ -243,6 +309,9 @@ php bin/console doctrine:query:sql "SELECT * FROM user"
 
 # Voir les activités en base
 php bin/console doctrine:query:sql "SELECT * FROM activity"
+
+# Voir les réservations en base
+php bin/console doctrine:query:sql "SELECT * FROM reservation"
 
 # Créer une migration
 php bin/console make:migration
@@ -268,6 +337,11 @@ php bin/console lexik:jwt:generate-keypair
 
 ### Ajouter un nouveau champ à l'entité Activity
 1. Modifier `src/Entity/Activity.php`
+2. Créer une migration : `php bin/console make:migration`
+3. Appliquer la migration : `php bin/console doctrine:migrations:migrate`
+
+### Ajouter un nouveau champ à l'entité Reservation
+1. Modifier `src/Entity/Reservation.php`
 2. Créer une migration : `php bin/console make:migration`
 3. Appliquer la migration : `php bin/console doctrine:migrations:migrate`
 
