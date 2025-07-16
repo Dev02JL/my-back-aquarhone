@@ -345,6 +345,145 @@ php bin/console lexik:jwt:generate-keypair
 2. Créer une migration : `php bin/console make:migration`
 3. Appliquer la migration : `php bin/console doctrine:migrations:migrate`
 
+## Tests et scripts automatisés
+
+Le projet inclut un système complet de tests automatisés pour vérifier le bon fonctionnement de l'authentification et des autorisations.
+
+### Scripts de test disponibles
+
+#### 🧹 `clean_db.sh` - Nettoyage de la base de données
+```bash
+# Mode interactif (demande confirmation)
+./clean_db.sh
+
+# Mode non-interactif (automatique)
+./clean_db.sh --force
+```
+
+**Fonctionnalités :**
+- Supprime toutes les réservations
+- Supprime toutes les activités
+- Supprime tous les utilisateurs (sauf l'admin principal)
+- Affiche les compteurs après nettoyage
+
+#### 📊 `fill_jdd.sh` - Remplissage du jeu de données
+```bash
+./fill_jdd.sh
+```
+
+**Fonctionnalités :**
+- Crée des activités de test variées
+- Crée des utilisateurs de test
+- Crée des réservations de test
+- Garantit un JDD reproductible
+
+#### 👨‍💼 `test_admin_permissions.sh` - Tests administrateur
+```bash
+./test_admin_permissions.sh
+```
+
+**Tests effectués :**
+- ✅ Connexion administrateur
+- ✅ Consultation des activités
+- ✅ Consultation des détails d'activité
+- ✅ Création de réservation
+- ✅ Consultation historique
+- ✅ Profil administrateur
+
+#### 👤 `test_user_permissions.sh` - Tests utilisateur
+```bash
+./test_user_permissions.sh
+```
+
+**Tests effectués :**
+- ✅ Connexion utilisateur
+- ✅ Consultation des activités
+- ✅ Consultation des détails d'activité
+- ✅ Création de réservation
+- ✅ Consultation historique
+- ✅ Profil utilisateur
+
+#### 🚀 `run_tests_with_jdd.sh` - Script complet automatisé
+```bash
+./run_tests_with_jdd.sh
+```
+
+**Workflow automatique :**
+1. 🧹 Nettoyage de la base de données
+2. 📊 Remplissage du JDD
+3. 👨‍💼 Tests administrateur
+4. 👤 Tests utilisateur
+5. 🎉 Rapport final
+
+### Utilisation des tests
+
+#### Test rapide avec JDD propre
+```bash
+# Exécuter tous les tests avec un environnement propre
+./run_tests_with_jdd.sh
+```
+
+#### Test manuel étape par étape
+```bash
+# 1. Nettoyer la base
+./clean_db.sh --force
+
+# 2. Remplir le JDD
+./fill_jdd.sh
+
+# 3. Tester les permissions admin
+./test_admin_permissions.sh
+
+# 4. Tester les permissions utilisateur
+./test_user_permissions.sh
+```
+
+### Structure des scripts de test
+
+```
+back-aquarhone/
+├── clean_db.sh              # Nettoyage de la base
+├── fill_jdd.sh              # Remplissage JDD
+├── test_admin_permissions.sh # Tests admin
+├── test_user_permissions.sh  # Tests utilisateur
+└── run_tests_with_jdd.sh    # Script complet
+```
+
+### Données de test
+
+#### Utilisateurs de test créés automatiquement
+- **Admin** : `admin@aquarhone.com` / `admin123`
+- **Utilisateur** : `user@aquarhone.com` / `user123`
+
+#### Activités de test
+- Kayak en mer
+- Paddle boarding
+- Canoë sur la rivière
+- Croisière côtière
+- Plongée sous-marine
+
+### Vérification du bon fonctionnement
+
+Les tests vérifient que :
+- ✅ L'authentification JWT fonctionne
+- ✅ Les rôles et permissions sont respectés
+- ✅ Les endpoints sont accessibles selon les droits
+- ✅ Les données sont correctement créées et consultées
+- ✅ Les erreurs d'accès sont bien gérées
+
+### Exemple de sortie réussie
+
+```
+🎉 Tous les tests sont PASSÉS avec succès !
+==============================================
+✅ Base de données nettoyée
+✅ JDD rempli
+✅ Tests administrateur : PASSÉS
+✅ Tests utilisateur : PASSÉS
+
+🎯 Le système fonctionne parfaitement avec un JDD propre et reproductible !
+```
+
 ## Support
 
 Pour toute question ou problème, consulter la documentation Symfony ou créer une issue. 
