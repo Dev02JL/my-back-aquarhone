@@ -3,7 +3,7 @@
 # Script de test pour vérifier les permissions d'un administrateur
 # Test des 3 fonctionnalités : connexion admin, gestion activités, vue réservations
 
-BASE_URL="https://localhost:8000/api"
+BASE_URL="http://localhost:8000/api"
 
 # Générer un email unique à chaque exécution
 UNIQ_ID=$(date +%s)$RANDOM

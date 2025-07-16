@@ -2,7 +2,7 @@
 
 # Script de test pour vérifier les permissions d'un utilisateur standard
 
-BASE_URL="https://localhost:8000/api"
+BASE_URL="http://localhost:8000/api"
 
 # Générer un email unique à chaque exécution
 UNIQ_ID=$(date +%s)$RANDOM

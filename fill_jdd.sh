@@ -27,13 +27,13 @@ echo -e "\n2️⃣  Création des activités de test..."
 # Supprimer les activités existantes pour éviter les doublons
 php bin/console doctrine:query:sql "DELETE FROM activity"
 
-# Créer les activités de test
+# Créer les activités de test avec créneaux horaires
 php bin/console doctrine:query:sql "INSERT INTO activity (name, description, activity_type, location, available_slots, price, remaining_spots, created_at, updated_at) VALUES 
-('Kayak en mer', 'Découvrez la côte en kayak de mer', 'kayak', 'Port de plaisance', '[]', 45.00, 8, datetime('now'), datetime('now')),
-('Paddle en mer', 'Balade en paddle sur la Méditerranée', 'paddle', 'Plage de la Corniche', '[]', 35.00, 6, datetime('now'), datetime('now')),
-('Plongée sous-marine', 'Exploration des fonds marins', 'diving', 'Centre de plongée', '[]', 80.00, 4, datetime('now'), datetime('now')),
-('Voile légère', 'Initiation à la voile sur optimist', 'sailing', 'Club nautique', '[]', 60.00, 10, datetime('now'), datetime('now')),
-('Jet ski', 'Sensation forte en jet ski', 'jetski', 'Base nautique', '[]', 120.00, 2, datetime('now'), datetime('now'))"
+('Kayak en mer', 'Découvrez la côte en kayak de mer', 'kayak', 'Port de plaisance', '[\"2024-07-20 09:00:00\", \"2024-07-20 10:30:00\", \"2024-07-20 14:00:00\", \"2024-07-20 15:30:00\", \"2024-07-21 09:00:00\", \"2024-07-21 10:30:00\", \"2024-07-21 14:00:00\", \"2024-07-21 15:30:00\", \"2024-07-22 09:00:00\", \"2024-07-22 10:30:00\", \"2024-07-22 14:00:00\", \"2024-07-22 15:30:00\"]', 45.00, 8, datetime('now'), datetime('now')),
+('Paddle en mer', 'Balade en paddle sur la Méditerranée', 'paddle', 'Plage de la Corniche', '[\"2024-07-20 10:00:00\", \"2024-07-20 11:30:00\", \"2024-07-20 15:00:00\", \"2024-07-20 16:30:00\", \"2024-07-21 10:00:00\", \"2024-07-21 11:30:00\", \"2024-07-21 15:00:00\", \"2024-07-21 16:30:00\", \"2024-07-22 10:00:00\", \"2024-07-22 11:30:00\", \"2024-07-22 15:00:00\", \"2024-07-22 16:30:00\"]', 35.00, 6, datetime('now'), datetime('now')),
+('Plongée sous-marine', 'Exploration des fonds marins', 'diving', 'Centre de plongée', '[\"2024-07-20 08:00:00\", \"2024-07-20 10:00:00\", \"2024-07-20 14:00:00\", \"2024-07-20 16:00:00\", \"2024-07-21 08:00:00\", \"2024-07-21 10:00:00\", \"2024-07-21 14:00:00\", \"2024-07-21 16:00:00\", \"2024-07-22 08:00:00\", \"2024-07-22 10:00:00\", \"2024-07-22 14:00:00\", \"2024-07-22 16:00:00\"]', 80.00, 4, datetime('now'), datetime('now')),
+('Voile légère', 'Initiation à la voile sur optimist', 'sailing', 'Club nautique', '[\"2024-07-20 09:30:00\", \"2024-07-20 11:00:00\", \"2024-07-20 14:30:00\", \"2024-07-20 16:00:00\", \"2024-07-21 09:30:00\", \"2024-07-21 11:00:00\", \"2024-07-21 14:30:00\", \"2024-07-21 16:00:00\", \"2024-07-22 09:30:00\", \"2024-07-22 11:00:00\", \"2024-07-22 14:30:00\", \"2024-07-22 16:00:00\"]', 60.00, 10, datetime('now'), datetime('now')),
+('Jet ski', 'Sensation forte en jet ski', 'jetski', 'Base nautique', '[\"2024-07-20 10:00:00\", \"2024-07-20 11:30:00\", \"2024-07-20 15:00:00\", \"2024-07-20 16:30:00\", \"2024-07-21 10:00:00\", \"2024-07-21 11:30:00\", \"2024-07-21 15:00:00\", \"2024-07-21 16:30:00\", \"2024-07-22 10:00:00\", \"2024-07-22 11:30:00\", \"2024-07-22 15:00:00\", \"2024-07-22 16:30:00\"]', 120.00, 2, datetime('now'), datetime('now'))"
 
 echo "✅ Activités créées"
 
