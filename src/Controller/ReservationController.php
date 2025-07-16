@@ -16,10 +16,25 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api/reservations')]
 final class ReservationController extends AbstractController
 {
-    #[Route('', name: 'app_reservations_list', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function index(EntityManagerInterface $entityManager): JsonResponse
+    private function addCorsHeaders(JsonResponse $response): JsonResponse
     {
+        $response->headers->set('Access-Control-Allow-Origin', 'http://localhost:3000');
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        return $response;
+    }
+
+    #[Route('', name: 'app_reservations_list', methods: ['GET', 'OPTIONS'])]
+    #[IsGranted('ROLE_USER')]
+    public function index(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $user = $this->getUser();
         $reservations = $entityManager->getRepository(Reservation::class)->findBy(['user' => $user]);
         
@@ -41,23 +56,31 @@ final class ReservationController extends AbstractController
             ];
         }
 
-        return $this->json($reservationData);
+        $response = $this->json($reservationData);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('/{id}', name: 'app_reservations_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_reservations_show', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
-    public function show(Reservation $reservation): JsonResponse
+    public function show(Request $request, Reservation $reservation): JsonResponse
     {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $user = $this->getUser();
         
 
         if ($reservation->getUser()->getId() !== $user->getId()) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Accès non autorisé'
             ], Response::HTTP_FORBIDDEN);
+            return $this->addCorsHeaders($response);
         }
 
-        return $this->json([
+        $response = $this->json([
             'id' => $reservation->getId(),
             'activity' => [
                 'id' => $reservation->getActivity()->getId(),
@@ -72,35 +95,45 @@ final class ReservationController extends AbstractController
             'createdAt' => $reservation->getCreatedAt()->format('Y-m-d H:i:s'),
             'updatedAt' => $reservation->getUpdatedAt()->format('Y-m-d H:i:s')
         ]);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('', name: 'app_reservations_create', methods: ['POST'])]
+    #[Route('', name: 'app_reservations_create', methods: ['POST', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator
     ): JsonResponse {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $data = json_decode($request->getContent(), true);
         
         if (!$data || !isset($data['activityId']) || !isset($data['dateTime'])) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Activity ID et date/heure sont requis'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
         $activity = $entityManager->getRepository(Activity::class)->find($data['activityId']);
         if (!$activity) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Activité non trouvée'
             ], Response::HTTP_NOT_FOUND);
+            return $this->addCorsHeaders($response);
         }
 
 
         if ($activity->getRemainingSpots() <= 0) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Aucune place disponible pour cette activité'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
 
@@ -116,9 +149,10 @@ final class ReservationController extends AbstractController
         }
         
         if (!$slotFound) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Créneau non disponible pour cette activité'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
 
@@ -129,9 +163,10 @@ final class ReservationController extends AbstractController
         ]);
 
         if ($existingReservation) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Vous avez déjà une réservation pour ce créneau'
             ], Response::HTTP_CONFLICT);
+            return $this->addCorsHeaders($response);
         }
 
         $reservation = new Reservation();
@@ -146,10 +181,11 @@ final class ReservationController extends AbstractController
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Données invalides',
                 'details' => $errorMessages
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
 
@@ -158,7 +194,7 @@ final class ReservationController extends AbstractController
         $entityManager->persist($reservation);
         $entityManager->flush();
 
-        return $this->json([
+        $response = $this->json([
             'message' => 'Réservation créée avec succès',
             'reservation' => [
                 'id' => $reservation->getId(),
@@ -174,35 +210,46 @@ final class ReservationController extends AbstractController
                 'createdAt' => $reservation->getCreatedAt()->format('Y-m-d H:i:s')
             ]
         ], Response::HTTP_CREATED);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('/{id}/cancel', name: 'app_reservations_cancel', methods: ['PUT'])]
+    #[Route('/{id}/cancel', name: 'app_reservations_cancel', methods: ['PUT', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
     public function cancel(
+        Request $request,
         Reservation $reservation,
         EntityManagerInterface $entityManager
     ): JsonResponse {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $user = $this->getUser();
         
 
         if ($reservation->getUser()->getId() !== $user->getId()) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Accès non autorisé'
             ], Response::HTTP_FORBIDDEN);
+            return $this->addCorsHeaders($response);
         }
 
 
         if ($reservation->getStatus() === 'cancelled') {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Cette réservation est déjà annulée'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
 
         if ($reservation->getDateTime() < new \DateTime()) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Impossible d\'annuler une réservation passée'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
         $reservation->setStatus('cancelled');
@@ -213,7 +260,7 @@ final class ReservationController extends AbstractController
 
         $entityManager->flush();
 
-        return $this->json([
+        $response = $this->json([
             'message' => 'Réservation annulée avec succès',
             'reservation' => [
                 'id' => $reservation->getId(),
@@ -221,5 +268,6 @@ final class ReservationController extends AbstractController
                 'updatedAt' => $reservation->getUpdatedAt()->format('Y-m-d H:i:s')
             ]
         ]);
+        return $this->addCorsHeaders($response);
     }
 }

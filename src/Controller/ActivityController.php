@@ -16,10 +16,25 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api/activities')]
 final class ActivityController extends AbstractController
 {
-    #[Route('', name: 'app_activities_list', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function index(EntityManagerInterface $entityManager): JsonResponse
+    private function addCorsHeaders(JsonResponse $response): JsonResponse
     {
+        $response->headers->set('Access-Control-Allow-Origin', 'http://localhost:3000');
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        return $response;
+    }
+
+    #[Route('', name: 'app_activities_list', methods: ['GET', 'OPTIONS'])]
+    #[IsGranted('ROLE_USER')]
+    public function index(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $activities = $entityManager->getRepository(Activity::class)->findAll();
         
         $activityData = [];
@@ -38,14 +53,21 @@ final class ActivityController extends AbstractController
             ];
         }
 
-        return $this->json($activityData);
+        $response = $this->json($activityData);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('/{id}', name: 'app_activities_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_activities_show', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
-    public function show(Activity $activity): JsonResponse
+    public function show(Request $request, Activity $activity): JsonResponse
     {
-        return $this->json([
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
+        $response = $this->json([
             'id' => $activity->getId(),
             'name' => $activity->getName(),
             'description' => $activity->getDescription(),
@@ -57,21 +79,29 @@ final class ActivityController extends AbstractController
             'createdAt' => $activity->getCreatedAt()->format('Y-m-d H:i:s'),
             'updatedAt' => $activity->getUpdatedAt()->format('Y-m-d H:i:s')
         ]);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('', name: 'app_activities_create', methods: ['POST'])]
+    #[Route('', name: 'app_activities_create', methods: ['POST', 'OPTIONS'])]
     #[IsGranted('ROLE_ADMIN')]
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator
     ): JsonResponse {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $data = json_decode($request->getContent(), true);
         
         if (!$data || !isset($data['name']) || !isset($data['description']) || !isset($data['activityType']) || !isset($data['location']) || !isset($data['price']) || !isset($data['remainingSpots'])) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Tous les champs sont requis : name, description, activityType, location, price, remainingSpots'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
         $activity = new Activity();
@@ -92,16 +122,17 @@ final class ActivityController extends AbstractController
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Données invalides',
                 'details' => $errorMessages
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
         $entityManager->persist($activity);
         $entityManager->flush();
 
-        return $this->json([
+        $response = $this->json([
             'message' => 'Activité créée avec succès',
             'activity' => [
                 'id' => $activity->getId(),
@@ -116,9 +147,10 @@ final class ActivityController extends AbstractController
                 'updatedAt' => $activity->getUpdatedAt()->format('Y-m-d H:i:s')
             ]
         ], Response::HTTP_CREATED);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('/{id}', name: 'app_activities_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'app_activities_update', methods: ['PUT', 'OPTIONS'])]
     #[IsGranted('ROLE_ADMIN')]
     public function update(
         Activity $activity,
@@ -126,12 +158,19 @@ final class ActivityController extends AbstractController
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator
     ): JsonResponse {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $data = json_decode($request->getContent(), true);
         
         if (!$data) {
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Données requises'
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
         if (isset($data['name'])) {
@@ -168,15 +207,16 @@ final class ActivityController extends AbstractController
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json([
+            $response = $this->json([
                 'error' => 'Données invalides',
                 'details' => $errorMessages
             ], Response::HTTP_BAD_REQUEST);
+            return $this->addCorsHeaders($response);
         }
 
         $entityManager->flush();
 
-        return $this->json([
+        $response = $this->json([
             'message' => 'Activité mise à jour avec succès',
             'activity' => [
                 'id' => $activity->getId(),
@@ -191,17 +231,25 @@ final class ActivityController extends AbstractController
                 'updatedAt' => $activity->getUpdatedAt()->format('Y-m-d H:i:s')
             ]
         ]);
+        return $this->addCorsHeaders($response);
     }
 
-    #[Route('/{id}', name: 'app_activities_delete', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'app_activities_delete', methods: ['DELETE', 'OPTIONS'])]
     #[IsGranted('ROLE_ADMIN')]
-    public function delete(Activity $activity, EntityManagerInterface $entityManager): JsonResponse
+    public function delete(Request $request, Activity $activity, EntityManagerInterface $entityManager): JsonResponse
     {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = new JsonResponse();
+            return $this->addCorsHeaders($response);
+        }
+
         $entityManager->remove($activity);
         $entityManager->flush();
 
-        return $this->json([
+        $response = $this->json([
             'message' => 'Activité supprimée avec succès'
         ]);
+        return $this->addCorsHeaders($response);
     }
 }

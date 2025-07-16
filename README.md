@@ -7,6 +7,7 @@ Backend Symfony avec gestion des utilisateurs et des rôles (USER et ADMIN), aut
 - PHP 8.2 ou supérieur
 - Composer
 - SQLite (inclus avec PHP)
+- Symfony CLI (recommandé)
 
 ## Installation
 
@@ -42,11 +43,29 @@ Backend Symfony avec gestion des utilisateurs et des rôles (USER et ADMIN), aut
    ```
 
 6. **Démarrer le serveur**
+   
+   **Option 1 : Avec Symfony CLI (recommandé)**
+   ```bash
+   symfony server:start -d --port=8000 --no-tls
+   ```
+   
+   **Option 2 : Avec PHP built-in server**
    ```bash
    php -S localhost:8000 -t public
    ```
 
+   **⚠️ Important :** Le serveur doit être démarré en mode HTTP (sans TLS) pour éviter les problèmes CORS avec le frontend.
+
 L'API sera accessible sur `http://localhost:8000`
+
+## Configuration CORS
+
+Le projet est configuré pour accepter les requêtes depuis le frontend Next.js (`http://localhost:3000`).
+
+- **Bundle utilisé :** NelmioCorsBundle
+- **Origines autorisées :** `http://localhost:3000`, `http://127.0.0.1:3000`
+- **Méthodes autorisées :** GET, POST, PUT, PATCH, DELETE, OPTIONS
+- **Headers autorisés :** Content-Type, Authorization, X-Requested-With
 
 ## Authentification JWT
 
@@ -236,6 +255,7 @@ back-aquarhone/
 │   ├── jwt/                     # Clés JWT (privée/publique)
 │   └── packages/
 │       ├── lexik_jwt_authentication.yaml # Configuration JWT
+│       ├── nelmio_cors.yaml     # Configuration CORS
 │       └── security.yaml        # Configuration sécurité
 ├── migrations/                  # Migrations de base de données
 ├── public/                     # Point d'entrée web
@@ -248,242 +268,55 @@ back-aquarhone/
 - **Fichier** : `var/app.db`
 - **Tables** : 
   - `user` (id, email, roles, password)
-  - `activity` (id, name, description, activity_type, location, available_slots, price, remaining_spots, created_at, updated_at)
-  - `reservation` (id, user_id, activity_id, date_time, status, created_at, updated_at)
+  - `activity` (id, name, description, activity_type, location, price, remaining_spots, available_slots)
+  - `reservation` (id, user_id, activity_id, date_time, status)
 
-## Entités
+## Développement
 
-### Entité Activity
-
-L'entité Activity contient les champs suivants :
-
-- **name** : Nom de l'activité
-- **description** : Description détaillée
-- **activityType** : Type d'activité (kayak, paddle, canoe, croisiere)
-- **location** : Lieu de l'activité
-- **availableSlots** : Créneaux/dates disponibles (JSON)
-- **price** : Prix de l'activité
-- **remainingSpots** : Nombre de places restantes
-- **createdAt** : Date de création
-- **updatedAt** : Date de mise à jour
-
-### Entité Reservation
-
-L'entité Reservation contient les champs suivants :
-
-- **user** : Utilisateur qui a fait la réservation (relation ManyToOne)
-- **activity** : Activité réservée (relation ManyToOne)
-- **dateTime** : Date et heure de la réservation
-- **status** : Statut de la réservation (pending, confirmed, cancelled)
-- **createdAt** : Date de création
-- **updatedAt** : Date de mise à jour
-
-## Fonctionnalités de réservation
-
-### Création de réservation
-- Vérification de la disponibilité des places
-- Vérification que le créneau est dans les créneaux disponibles
-- Vérification qu'il n'y a pas de doublon de réservation
-- Décrémentation automatique du nombre de places restantes
-
-### Annulation de réservation
-- Vérification que l'utilisateur peut annuler sa propre réservation
-- Vérification que la réservation n'est pas dans le passé
-- Incrémentation automatique du nombre de places restantes
-
-### Historique des réservations
-- Accès à toutes les réservations de l'utilisateur connecté
-- Détails complets de chaque réservation avec les informations de l'activité
-
-## Commandes utiles
+### Commandes utiles
 
 ```bash
 # Vider le cache
 php bin/console cache:clear
 
-# Lister les routes
+# Voir les routes disponibles
 php bin/console debug:router
 
-# Voir les utilisateurs en base
-php bin/console doctrine:query:sql "SELECT * FROM user"
-
-# Voir les activités en base
-php bin/console doctrine:query:sql "SELECT * FROM activity"
-
-# Voir les réservations en base
-php bin/console doctrine:query:sql "SELECT * FROM reservation"
+# Voir les services disponibles
+php bin/console debug:container
 
 # Créer une migration
 php bin/console make:migration
 
-# Appliquer les migrations
+# Exécuter les migrations
 php bin/console doctrine:migrations:migrate
 
-# Générer les clés JWT
-php bin/console lexik:jwt:generate-keypair
+# Créer un utilisateur admin
+php bin/console app:create-admin email@example.com password
 ```
 
-## Développement
+### Tests
 
-### Ajouter une nouvelle route
-1. Créer/modifier un contrôleur dans `src/Controller/`
-2. Ajouter l'attribut `#[Route()]`
-3. Vider le cache : `php bin/console cache:clear`
-
-### Ajouter un nouveau champ à l'entité User
-1. Modifier `src/Entity/User.php`
-2. Créer une migration : `php bin/console make:migration`
-3. Appliquer la migration : `php bin/console doctrine:migrations:migrate`
-
-### Ajouter un nouveau champ à l'entité Activity
-1. Modifier `src/Entity/Activity.php`
-2. Créer une migration : `php bin/console make:migration`
-3. Appliquer la migration : `php bin/console doctrine:migrations:migrate`
-
-### Ajouter un nouveau champ à l'entité Reservation
-1. Modifier `src/Entity/Reservation.php`
-2. Créer une migration : `php bin/console make:migration`
-3. Appliquer la migration : `php bin/console doctrine:migrations:migrate`
-
-## Tests et scripts automatisés
-
-Le projet inclut un système complet de tests automatisés pour vérifier le bon fonctionnement de l'authentification et des autorisations.
-
-### Scripts de test disponibles
-
-#### 🧹 `clean_db.sh` - Nettoyage de la base de données
 ```bash
-# Mode interactif (demande confirmation)
-./clean_db.sh
+# Lancer les tests
+php bin/phpunit
 
-# Mode non-interactif (automatique)
-./clean_db.sh --force
-```
-
-**Fonctionnalités :**
-- Supprime toutes les réservations
-- Supprime toutes les activités
-- Supprime tous les utilisateurs (sauf l'admin principal)
-- Affiche les compteurs après nettoyage
-
-#### 📊 `fill_jdd.sh` - Remplissage du jeu de données
-```bash
-./fill_jdd.sh
-```
-
-**Fonctionnalités :**
-- Crée des activités de test variées
-- Crée des utilisateurs de test
-- Crée des réservations de test
-- Garantit un JDD reproductible
-
-#### 👨‍💼 `test_admin_permissions.sh` - Tests administrateur
-```bash
-./test_admin_permissions.sh
-```
-
-**Tests effectués :**
-- ✅ Connexion administrateur
-- ✅ Consultation des activités
-- ✅ Consultation des détails d'activité
-- ✅ Création de réservation
-- ✅ Consultation historique
-- ✅ Profil administrateur
-
-#### 👤 `test_user_permissions.sh` - Tests utilisateur
-```bash
-./test_user_permissions.sh
-```
-
-**Tests effectués :**
-- ✅ Connexion utilisateur
-- ✅ Consultation des activités
-- ✅ Consultation des détails d'activité
-- ✅ Création de réservation
-- ✅ Consultation historique
-- ✅ Profil utilisateur
-
-#### 🚀 `run_tests_with_jdd.sh` - Script complet automatisé
-```bash
+# Tests avec données de test
 ./run_tests_with_jdd.sh
 ```
 
-**Workflow automatique :**
-1. 🧹 Nettoyage de la base de données
-2. 📊 Remplissage du JDD
-3. 👨‍💼 Tests administrateur
-4. 👤 Tests utilisateur
-5. 🎉 Rapport final
+## Dépannage
 
-### Utilisation des tests
+### Problèmes CORS
+Si vous rencontrez des erreurs CORS :
+1. Vérifiez que le serveur est démarré en mode HTTP (`--no-tls`)
+2. Vérifiez que le frontend est sur `http://localhost:3000`
+3. Videz le cache : `php bin/console cache:clear`
 
-#### Test rapide avec JDD propre
-```bash
-# Exécuter tous les tests avec un environnement propre
-./run_tests_with_jdd.sh
-```
+### Problèmes d'authentification
+1. Vérifiez que les clés JWT sont générées : `php bin/console lexik:jwt:generate-keypair`
+2. Vérifiez que l'utilisateur existe : `php bin/console app:create-admin admin@aquarhone.com admin123`
 
-#### Test manuel étape par étape
-```bash
-# 1. Nettoyer la base
-./clean_db.sh --force
-
-# 2. Remplir le JDD
-./fill_jdd.sh
-
-# 3. Tester les permissions admin
-./test_admin_permissions.sh
-
-# 4. Tester les permissions utilisateur
-./test_user_permissions.sh
-```
-
-### Structure des scripts de test
-
-```
-back-aquarhone/
-├── clean_db.sh              # Nettoyage de la base
-├── fill_jdd.sh              # Remplissage JDD
-├── test_admin_permissions.sh # Tests admin
-├── test_user_permissions.sh  # Tests utilisateur
-└── run_tests_with_jdd.sh    # Script complet
-```
-
-### Données de test
-
-#### Utilisateurs de test créés automatiquement
-- **Admin** : `admin@aquarhone.com` / `admin123`
-- **Utilisateur** : `user@aquarhone.com` / `user123`
-
-#### Activités de test
-- Kayak en mer
-- Paddle boarding
-- Canoë sur la rivière
-- Croisière côtière
-- Plongée sous-marine
-
-### Vérification du bon fonctionnement
-
-Les tests vérifient que :
-- ✅ L'authentification JWT fonctionne
-- ✅ Les rôles et permissions sont respectés
-- ✅ Les endpoints sont accessibles selon les droits
-- ✅ Les données sont correctement créées et consultées
-- ✅ Les erreurs d'accès sont bien gérées
-
-### Exemple de sortie réussie
-
-```
-🎉 Tous les tests sont PASSÉS avec succès !
-==============================================
-✅ Base de données nettoyée
-✅ JDD rempli
-✅ Tests administrateur : PASSÉS
-✅ Tests utilisateur : PASSÉS
-
-🎯 Le système fonctionne parfaitement avec un JDD propre et reproductible !
-```
-
-## Support
-
-Pour toute question ou problème, consulter la documentation Symfony ou créer une issue. 
+### Problèmes de base de données
+1. Vérifiez que les migrations sont à jour : `php bin/console doctrine:migrations:migrate`
+2. Vérifiez que la base de données existe : `ls var/app.db` 

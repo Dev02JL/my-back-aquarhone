@@ -18,13 +18,18 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route('/api/auth')]
 final class AuthController extends AbstractController
 {
-    #[Route('/register', name: 'app_auth_register', methods: ['POST'])]
+    #[Route('/register', name: 'app_auth_register', methods: ['POST', 'OPTIONS'])]
     public function register(
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator
     ): JsonResponse {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse();
+        }
+
         $data = json_decode($request->getContent(), true);
         
         if (!$data || !isset($data['email']) || !isset($data['password'])) {
@@ -70,13 +75,18 @@ final class AuthController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    #[Route('/login', name: 'app_auth_login', methods: ['POST'])]
+    #[Route('/login', name: 'app_auth_login', methods: ['POST', 'OPTIONS'])]
     public function login(
         Request $request,
         JWTTokenManagerInterface $jwtManager,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $entityManager
     ): JsonResponse {
+        // Gérer les requêtes OPTIONS (preflight)
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse();
+        }
+
         $data = json_decode($request->getContent(), true);
         
         if (!$data || !isset($data['email']) || !isset($data['password'])) {
@@ -106,7 +116,7 @@ final class AuthController extends AbstractController
         ]);
     }
 
-    #[Route('/me', name: 'app_auth_me', methods: ['GET'])]
+    #[Route('/me', name: 'app_auth_me', methods: ['GET', 'OPTIONS'])]
     public function me(): JsonResponse
     {
         $user = $this->getUser();
